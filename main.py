@@ -1,356 +1,201 @@
 import pygame
-import random
+import sys
+import os
+# --------- Configurações ---------
+largura = 1280         # largura da janela do jogo
+altura = 720           # altura da janela do jogo
+FPS = 60               # frames por segundo (velocidade do loop)
 
+# Caminho da música (está uma pasta acima, dentro da pasta 'audio')
+base_path = os.path.dirname(os.path.abspath(__file__))
+caminho_musica = os.path.join(base_path, "som", "somdefundo.mp3")
+
+# Cores usadas no jogo
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+HIGHLIGHT = (255, 255, 0)  # amarelo para destacar os botões
+
+# Inicializa todos os módulos do pygame (exceto mixer que será inicializado no menu)
 pygame.init()
 
-LARGURA = 800
-ALTURA = 600
-TELA = pygame.display.set_mode((LARGURA, ALTURA))
-pygame.display.set_caption("Robot Defense - Template")
-FPS = 60
-clock = pygame.time.Clock()
+# Caminho do ícone (volta uma pasta e acessa teste.png)
+icon_path = os.path.join(os.path.dirname(__file__),  "sprites", "Fundo.png")
+icon = pygame.image.load(icon_path)
+pygame.display.set_icon(icon)
+pygame.display.set_caption("Robot Defense")
 
-# Duração dos power-ups em ticks (FPS * segundos). Ex.: 60 * 5 = 5s
-POWERUP_DURACAO = 60 * 5
+# Fonte usada nos botões ##### Procurar fonte ideal #####
+FONT_BUTTON = pygame.font.SysFont("Poppins", 67)
 
-# CLASSE BASE
-class Entidade(pygame.sprite.Sprite):
-    def __init__(self, x, y, velocidade):
-        super().__init__()
-        self.velocidade = velocidade
-        self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(center=(x, y))
+# Cria a janela do jogo com o tamanho definido
+tela = pygame.display.set_mode((largura, altura))
 
-    def mover(self, dx, dy):
-        self.rect.x += dx
-        self.rect.y += dy
+# Carrega a imagem de fundo do menu e ajusta para o tamanho da janela
+caminho_fundo = os.path.join(os.path.dirname(__file__), "sprites", "Fundo.png")
+fundo_original = pygame.image.load(caminho_fundo)
+fundo = pygame.transform.scale(fundo_original, (largura, altura))
 
 
-# JOGADOR
-class Jogador(Entidade):
-    def __init__(self, x, y):
-        super().__init__(x, y, 5)
-        self.image.fill((0, 255, 0))  # verde
-        self.vida = 5
+class Button:
+    """Classe que representa um botão interativo no menu."""
 
-        # Power-ups / estados
-        self.bonus_velocidade = 0
-        self.tem_tiro_triplo = False
-        self.tempo_tiro_triplo = 0
-        self.tempo_velocidade = 0
+    def __init__(self, text, pos, callback):
+        self.text = text                  # texto exibido no botão
+        self.callback = callback          # função chamada ao clicar no botão
+        self.default_color = WHITE        # cor padrão do texto
+        self.highlight_color = HIGHLIGHT  # cor quando mouse está em cima
+        self.font = FONT_BUTTON           # fonte usada
+        self.label = self.font.render(self.text, True, self.default_color)
+        self.rect = self.label.get_rect(center=pos)  # retângulo para detectar clique e posição
 
-    def update(self):
-        keys = pygame.key.get_pressed()
-        vel = self.velocidade + self.bonus_velocidade
-
-        if keys[pygame.K_w] or keys[pygame.K_UP]:
-            self.mover(0, -vel)
-        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            self.mover(0, vel)
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.mover(-vel, 0)
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.mover(vel, 0)
-
-        # Limitar dentro da tela
-        self.rect.x = max(0, min(self.rect.x, LARGURA - 40))
-        self.rect.y = max(0, min(self.rect.y, ALTURA - 40))
-
-        # CONTAGEM DOS POWERUPS
-        if self.tem_tiro_triplo:
-            self.tempo_tiro_triplo -= 1
-            if self.tempo_tiro_triplo <= 0:
-                self.tem_tiro_triplo = False
-
-        if self.bonus_velocidade > 0:
-            self.tempo_velocidade -= 1
-            if self.tempo_velocidade <= 0:
-                self.bonus_velocidade = 0
-
-
-# TIRO
-class Tiro(Entidade):
-    def __init__(self, x, y):
-        super().__init__(x, y, 10)
-        self.image = pygame.Surface((6, 12))
-        self.image.fill((255, 255, 0))
-        self.rect = self.image.get_rect(center=(x, y))
-
-    def update(self):
-        self.rect.y -= self.velocidade
-        if self.rect.y < -10:
-            self.kill()
-
-
-# ROBO BASE
-class Robo(Entidade):
-    def __init__(self, x, y, velocidade):
-        super().__init__(x, y, velocidade)
-        # Removido o fill vermelho aqui para não sobrescrever sprites
-        # self.image.fill((255, 0, 0))
-
-        self.explodindo = False
-        self.explosion_done = False
-
-    def start_explosion(self):
-        if self.explodindo:
-            return
-        self.explodindo = True
-
-    def update(self):
-        if not self.explodindo:
-            self.atualizar_posicao()
-            if self.rect.y > ALTURA:
-                self.kill()
+    def draw(self, surface, mouse_pos):
+        # Define cor do texto: destaca se mouse estiver sobre o botão
+        if self.rect.collidepoint(mouse_pos):
+            color = self.highlight_color
         else:
-            if self.explosion_done:
-                self.kill()
+            color = self.default_color
 
-    def atualizar_posicao(self):
-        raise NotImplementedError
+        outline_color = BLACK  # cor da borda do texto para melhor leitura
+        offsets = [(-1, -1), (-1, 0), (-1, 1),
+                   (0, -1),           (0, 1),
+                   (1, -1),  (1, 0),  (1, 1)]
 
+        # Desenha a borda do texto com pequenos deslocamentos para criar efeito contorno
+        for ox, oy in offsets:
+            pos = self.rect.move(ox, oy)
+            outline_surf = self.font.render(self.text, True, outline_color)
+            surface.blit(outline_surf, pos)
 
-class RoboRapido(Robo):
-    def __init__(self, x, y):
-        super().__init__(x, y, velocidade=6)
-        self.image.fill((255, 0, 0))  # mantém vermelho
-        self.jitter = random.choice([-1, 0, 1])
+        # Desenha o texto principal
+        text_surf = self.font.render(self.text, True, color)
+        surface.blit(text_surf, self.rect)
 
-    def atualizar_posicao(self):
-        self.rect.y += self.velocidade
-        self.rect.x += self.jitter * 2
-
-        if self.rect.x < 0:
-            self.rect.x = 0
-            self.jitter *= -1
-        if self.rect.x > LARGURA - 40:
-            self.rect.x = LARGURA - 40
-            self.jitter *= -1
+    def check_click(self, mouse_pos):
+        # Se o clique aconteceu dentro do botão, executa a ação (callback)
+        if self.rect.collidepoint(mouse_pos):
+            self.callback()
 
 
-class RoboZigueZague(Robo):
-    def __init__(self, x, y):
-        super().__init__(x, y, velocidade=3)
-        self.image.fill((255, 0, 0))  # mantém vermelho
-        self.direcao = 1
+class Menu:
+    """Classe que gerencia o menu principal do jogo."""
 
-    def atualizar_posicao(self):
-        self.rect.y += self.velocidade
-        self.rect.x += self.direcao * 3
+    def __init__(self, screen):
+        self.screen = screen
+        mid_x = largura // 2      # posição horizontal central para os botões
+        start_y = 380             # posição vertical inicial do primeiro botão
+        gap = 60                  # espaçamento vertical entre os botões
 
-        if self.rect.x <= 0 or self.rect.x >= LARGURA - 40:
-            self.direcao *= -1
+        # Cria botões do menu com suas posições e funções
+        self.buttons = [
+            Button("play",    (mid_x, start_y), self.start_game),
+            Button("options", (mid_x, start_y + gap), self.show_options),
+            Button("quit",    (mid_x, start_y + 2 * gap), self.exit_game),
+        ]
 
+        self.running = True
 
-class RoboSaltador(Robo):
-    def __init__(self, x, y):
-        super().__init__(x, y, velocidade=2)
-        self.image = pygame.image.load("Robot-Defense/sprites/robosaltador.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (40, 40))
-        self.rect = self.image.get_rect(center=(x, y))
+        # Variáveis para animação do círculo de transição do menu
+        self.animating_circle = True
+        self.circle_radius = 0
+        self.circle_center = (largura // 2, altura // 2)
 
-        #comportamentos
-        self.salto_forca = random.randint(12, 28)
-        self.salto_cooldown = random.randint(30, 90)
-        self.salto_timer = 0
-        self.dir_x = random.choice([-1, 1])  
-        self.vel_x = random.randint(2, 4)   
+        self.animation_done = False  # indica se animação terminou
 
-    def atualizar_posicao(self):
-        #movimentos (verticais e horizontais)
-        self.rect.y += self.velocidade
-        self.rect.x += self.dir_x * self.vel_x
-        if self.rect.x <= 0 or self.rect.x >= LARGURA - 40:
-            self.dir_x *= -1
+    def start_game(self):
+        print("Iniciando o jogo...")
+        self.running = False  # fecha o menu para iniciar o jogo
 
-        self.salto_timer += 1
-        if self.salto_timer >= self.salto_cooldown:
-            self.rect.y -= self.salto_forca
-            self.salto_timer = 0
-            self.salto_cooldown = random.randint(30, 90)
-        if self.rect.y > ALTURA:
-            self.kill()
+    def show_options(self):
+        print("Abrindo opções...")  # placeholder para futura tela de opções
 
-class Explosion(pygame.sprite.Sprite):
-    def __init__(self, center, target_enemy=None, max_radius=50, frames=8):
-        super().__init__()
-        self.target_enemy = target_enemy
-        self.frames = []
-        self.frame_index = 0
+    def exit_game(self):
+        pygame.quit()
+        sys.exit()  # encerra o programa
 
-        for i in range(1, frames + 1):
-            radius = int(max_radius * (i / frames))
-            surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
-            pygame.draw.circle(surf, (255, 150, 0, 200), (radius, radius), radius)
-            pygame.draw.circle(surf, (255, 80, 0, 150), (radius, radius), max(1, radius // 2))
-            self.frames.append(surf)
+    def run(self):
+        # Inicializa o mixer e toca a música do menu em loop infinito
+        pygame.mixer.init()
+        pygame.mixer.music.load(caminho_musica)
+        pygame.mixer.music.set_volume(0.3)  # volume entre 0.0 e 1.0
+        pygame.mixer.music.play(-1)         # -1 para tocar em loop
 
-        self.image = self.frames[0]
-        self.rect = self.image.get_rect(center=center)
-        self.ticks = 0
+        clock = pygame.time.Clock()
+        max_radius = int((largura ** 2 + altura ** 2) ** 0.5)  # diagonal da tela para animação
 
-    def update(self):
-        self.ticks += 1
-        if self.ticks % 4 == 0:
-            self.frame_index += 1
+        while self.running:
+            mouse_pos = pygame.mouse.get_pos()
 
-            if self.frame_index >= len(self.frames):
-                if self.target_enemy:
-                    self.target_enemy.explosion_done = True
-                self.kill()
-                return
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.exit_game()
 
-            center = self.rect.center
-            self.image = self.frames[self.frame_index]
-            self.rect = self.image.get_rect(center=center)
+                # Só permite clicar nos botões após animação acabar
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.animation_done:
+                    for btn in self.buttons:
+                        btn.check_click(mouse_pos)
 
-class PowerUp(pygame.sprite.Sprite):
-    def __init__(self, x, y, cor):
-        super().__init__()
-        self.image = pygame.Surface((30, 30))
-        self.image.fill(cor)
-        self.rect = self.image.get_rect(center=(x, y))
-        self.vel = 2
+            # Desenha o fundo do menu
+            self.screen.blit(fundo, (0, 0))
 
-    def update(self):
-        self.rect.y += self.vel
-        if self.rect.y > ALTURA + 20:
-            self.kill()
+            # Animação do círculo que revela o menu
+            if self.animating_circle:
+                mask = pygame.Surface((largura, altura))
+                mask.fill(BLACK)
+                mask.set_colorkey((255, 0, 255))  # cor transparente da máscara
+                pygame.draw.circle(mask, (255, 0, 255), self.circle_center, self.circle_radius)
+                self.screen.blit(mask, (0, 0))
+
+                self.circle_radius += 20  # aumenta o raio do círculo
+
+                if self.circle_radius > max_radius:
+                    self.animating_circle = False
+                    self.animation_done = True
+
+            # Após animação, desenha os botões e permite interação
+            if self.animation_done:
+                for btn in self.buttons:
+                    btn.draw(self.screen, mouse_pos)
+
+            pygame.display.flip()
+            clock.tick(FPS)
+
+        # Para a música quando o menu fechar
+        pygame.mixer.music.stop()
 
 
-class PU_VidaExtra(PowerUp):
-    def __init__(self, x, y):
-        super().__init__(x, y, (0, 150, 255))
+class Game:
+    """Classe principal do jogo."""
+
+    def __init__(self):
+        self.screen = pygame.display.set_mode((largura, altura))
+
+    def run(self):
+        # Executa o menu antes do jogo começar
+        menu = Menu(self.screen)
+        menu.run()
+        self.game_loop()
+
+    def game_loop(self):
+       ''' clock = pygame.time.Clock()
+        running = True
+
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            # Limpa a tela com cor cinza escura
+            self.screen.fill((30, 30, 30))
+
+            # Aqui vai o código do jogo propriamente dito
+
+            pygame.display.flip()
+            clock.tick(FPS)
+
+        pygame.quit()'''
+       main()
+       
 
 
-class PU_Velocidade(PowerUp):
-    def __init__(self, x, y):
-        super().__init__(x, y, (255, 255, 0))
-
-
-class PU_TiroTriplo(PowerUp):
-    def __init__(self, x, y):
-        super().__init__(x, y, (255, 100, 0))
-
-
-#GRUPOS
-todos_sprites = pygame.sprite.Group()
-inimigos = pygame.sprite.Group()
-tiros = pygame.sprite.Group()
-explosoes = pygame.sprite.Group()
-powerups = pygame.sprite.Group()
-
-jogador = Jogador(LARGURA // 2, ALTURA - 60)
-todos_sprites.add(jogador)
-
-pontos = 0
-spawn_timer = 0
-timer_tiro = 0
-
-rodando = True
-def criar_tiro(x, y, jogador_ref):
-    t = Tiro(x, y)
-    todos_sprites.add(t)
-    tiros.add(t)
-
-while rodando:
-    clock.tick(FPS)
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            rodando = False
-
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if jogador.tem_tiro_triplo:
-                    criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-                    criar_tiro(jogador.rect.centerx - 18, jogador.rect.y, jogador)
-                    criar_tiro(jogador.rect.centerx + 18, jogador.rect.y, jogador)
-                else:
-                    criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-
-    timer_tiro += 1
-    if pygame.mouse.get_pressed()[0] and timer_tiro >= 10:
-        if jogador.tem_tiro_triplo:
-            criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-            criar_tiro(jogador.rect.centerx - 18, jogador.rect.y, jogador)
-            criar_tiro(jogador.rect.centerx + 18, jogador.rect.y, jogador)
-        else:
-            criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-        timer_tiro = 0
-
-    spawn_timer += 1
-    if spawn_timer > 40:
-        tipo = random.choice(["zig", "rapido", "saltar"])
-        if tipo == "zig":
-            robo = RoboZigueZague(random.randint(40, LARGURA - 40), -40)
-        elif tipo == "rapido":
-            robo = RoboRapido(random.randint(40, LARGURA - 40), -40)
-        else:
-            robo = RoboSaltador(random.randint(40, LARGURA - 40), -40)
-
-        todos_sprites.add(robo)
-        inimigos.add(robo)
-        spawn_timer = 0
-
-    if random.random() < 0.01:
-        tipo_p = random.choice(["vida", "vel", "triplo"])
-        x = random.randint(40, LARGURA - 40)
-        if tipo_p == "vida":
-            p = PU_VidaExtra(x, -30)
-        elif tipo_p == "vel":
-            p = PU_Velocidade(x, -30)
-        else:
-            p = PU_TiroTriplo(x, -30)
-        todos_sprites.add(p)
-        powerups.add(p)
-
-    colisoes = pygame.sprite.groupcollide(inimigos, tiros, False, True)
-    for robo, lista_tiros in colisoes.items():
-        if robo.explodindo:
-            continue
-
-        robo.start_explosion()
-
-        explosao = Explosion(robo.rect.center, target_enemy=robo)
-        todos_sprites.add(explosao)
-        explosoes.add(explosao)
-
-        pontos += 1
-    if pygame.sprite.spritecollide(jogador, inimigos, True):
-        jogador.vida -= 1
-        if jogador.vida <= 0:
-            print("GAME OVER!")
-            rodando = False
-
-    pegou = pygame.sprite.spritecollide(jogador, powerups, True)
-    for p in pegou:
-        if isinstance(p, PU_VidaExtra):
-            jogador.vida += 1
-        elif isinstance(p, PU_Velocidade):
-            jogador.bonus_velocidade = 3
-            jogador.tempo_velocidade = POWERUP_DURACAO
-        elif isinstance(p, PU_TiroTriplo):
-            jogador.tem_tiro_triplo = True
-            jogador.tempo_tiro_triplo = POWERUP_DURACAO
-
-    todos_sprites.update()
-    TELA.fill((20, 20, 20))
-    todos_sprites.draw(TELA)
-
-    font = pygame.font.SysFont(None, 30)
-    texto = font.render(f"Vida: {jogador.vida}  |  Pontos: {pontos}", True, (255, 255, 255))
-    TELA.blit(texto, (10, 10))
-
-    y_offset = 40
-    if jogador.bonus_velocidade > 0:
-        segundos = max(0, jogador.tempo_velocidade // FPS)
-        TELA.blit(font.render(f"Velocidade: {segundos}s", True, (255, 255, 255)), (10, y_offset))
-        y_offset += 22
-    if jogador.tem_tiro_triplo:
-        segundos = max(0, jogador.tempo_tiro_triplo // FPS)
-        TELA.blit(font.render(f"Tiro Triplo: {segundos}s", True, (255, 255, 255)), (10, y_offset))
-
-    pygame.display.flip()
-
-pygame.quit()
+if __name__ == "__main__":
+    Game().run()
