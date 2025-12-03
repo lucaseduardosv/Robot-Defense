@@ -1,5 +1,7 @@
 import pygame
 import random
+import sys 
+import math
 
 pygame.init()
 
@@ -15,8 +17,8 @@ POWERUP_DURACAO = 60 * 5
 
 # CLASSE BASE
 class Entidade(pygame.sprite.Sprite):
-    def _init_(self, x, y, velocidade):
-        super()._init_()
+    def __init__(self, x, y, velocidade):
+        super().__init__()
         self.velocidade = velocidade
         self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
         self.rect = self.image.get_rect(center=(x, y))
@@ -28,8 +30,8 @@ class Entidade(pygame.sprite.Sprite):
 
 # JOGADOR
 class Jogador(Entidade):
-    def _init_(self, x, y):
-        super()._init_(x, y, 5)
+    def __init__(self, x, y):
+        super().__init__(x, y, 5)
         self.image.fill((0, 255, 0))  # verde
         self.vida = 5
 
@@ -70,8 +72,8 @@ class Jogador(Entidade):
 
 # TIRO
 class Tiro(Entidade):
-    def _init_(self, x, y):
-        super()._init_(x, y, 10)
+    def __init__(self, x, y):
+        super().__init__(x, y, 10)
         self.image = pygame.Surface((6, 12))
         self.image.fill((255, 255, 0))
         self.rect = self.image.get_rect(center=(x, y))
@@ -84,8 +86,8 @@ class Tiro(Entidade):
 
 # ROBO BASE
 class Robo(Entidade):
-    def _init_(self, x, y, velocidade):
-        super()._init_(x, y, velocidade)
+    def __init__(self, x, y, velocidade):
+        super().__init__(x, y, velocidade)
         # Removido o fill vermelho aqui para não sobrescrever sprites
         # self.image.fill((255, 0, 0))
 
@@ -111,8 +113,8 @@ class Robo(Entidade):
 
 
 class RoboRapido(Robo):
-    def _init_(self, x, y):
-        super()._init_(x, y, velocidade=6)
+    def __init__(self, x, y):
+        super().__init__(x, y, velocidade=6)
         self.image.fill((255, 0, 0))  # mantém vermelho
         self.jitter = random.choice([-1, 0, 1])
 
@@ -129,8 +131,8 @@ class RoboRapido(Robo):
 
 
 class RoboZigueZague(Robo):
-    def _init_(self, x, y):
-        super()._init_(x, y, velocidade=3)
+    def __init__(self, x, y):
+        super().__init__(x, y, velocidade=3)
         self.image.fill((255, 0, 0))  # mantém vermelho
         self.direcao = 1
 
@@ -143,9 +145,9 @@ class RoboZigueZague(Robo):
 
 
 class RoboSaltador(Robo):
-    def _init_(self, x, y):
-        super()._init_(x, y, velocidade=2)
-        self.image = pygame.image.load("Robot-Defense/sprites/robosaltador.png").convert_alpha()
+    def __init__(self, x, y):
+        super().__init__(x, y, velocidade=2)
+        self.image = pygame.image.load("Robot-Defense-main/sprites/robosaltador.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (40, 40))
         self.rect = self.image.get_rect(center=(x, y))
 
@@ -171,9 +173,35 @@ class RoboSaltador(Robo):
         if self.rect.y > ALTURA:
             self.kill()
 
+
+class RoboCiclico(Robo):
+    def __init__(self, x, y):
+        super().__init__(x, y, velocidade = 2)
+        self.image = pygame.image.load("Robot-Defense-main/sprites/RoboCiclico.png").convert_alpha()
+        self.raio = 60
+        self.angulo = 0
+        self.velang = 4.0
+
+        self.centrox = float(x)
+        self.centroy = float(y)
+       
+        self.rect = self.image.get_rect(center=(x,y))
+
+    def atualizar_posicao(self):
+        self.centroy += self.velocidade
+        self.angulo += self.velang
+
+        angulo_rad = math.radians(self.angulo)
+        novo_x = self.centrox + self.raio * math.cos(angulo_rad)
+        novo_y = self.centroy + self.raio * math.sin(angulo_rad)
+        self.rect.x = int(novo_x)
+        self.rect.y = int(novo_y)
+        self.rect.x = max(0, min(self.rect.x, LARGURA - self.rect.width ))
+
+
 class Explosion(pygame.sprite.Sprite):
-    def _init_(self, center, target_enemy=None, max_radius=50, frames=8):
-        super()._init_()
+    def __init__(self, center, target_enemy=None, max_radius=50, frames=8):
+        super().__init__()
         self.target_enemy = target_enemy
         self.frames = []
         self.frame_index = 0
@@ -205,8 +233,8 @@ class Explosion(pygame.sprite.Sprite):
             self.rect = self.image.get_rect(center=center)
 
 class PowerUp(pygame.sprite.Sprite):
-    def _init_(self, x, y, cor):
-        super()._init_()
+    def __init__(self, x, y, cor):
+        super().__init__()
         self.image = pygame.Surface((30, 30))
         self.image.fill(cor)
         self.rect = self.image.get_rect(center=(x, y))
@@ -219,18 +247,18 @@ class PowerUp(pygame.sprite.Sprite):
 
 
 class PU_VidaExtra(PowerUp):
-    def _init_(self, x, y):
-        super()._init_(x, y, (0, 150, 255))
+    def __init__(self, x, y):
+        super().__init__(x, y, (0, 150, 255))
 
 
 class PU_Velocidade(PowerUp):
-    def _init_(self, x, y):
-        super()._init_(x, y, (255, 255, 0))
+    def __init__(self, x, y):
+        super().__init__(x, y, (255, 255, 0))
 
 
 class PU_TiroTriplo(PowerUp):
-    def _init_(self, x, y):
-        super()._init_(x, y, (255, 100, 0))
+    def __init__(self, x, y):
+        super().__init__(x, y, (255, 100, 0))
 
 
 #GRUPOS
@@ -281,13 +309,15 @@ while rodando:
 
     spawn_timer += 1
     if spawn_timer > 40:
-        tipo = random.choice(["zig", "rapido", "saltar"])
+        tipo = random.choice(["zig", "rapido", "saltar", "ciclico"])
         if tipo == "zig":
             robo = RoboZigueZague(random.randint(40, LARGURA - 40), -40)
         elif tipo == "rapido":
             robo = RoboRapido(random.randint(40, LARGURA - 40), -40)
-        else:
+        elif tipo == "saltar":
             robo = RoboSaltador(random.randint(40, LARGURA - 40), -40)
+        elif tipo == "ciclico":
+            robo = RoboCiclico(random.randint(40, LARGURA - 40), -40)
 
         todos_sprites.add(robo)
         inimigos.add(robo)
