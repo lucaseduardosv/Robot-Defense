@@ -22,7 +22,7 @@ pygame.init()
 icon_path = os.path.join(os.path.dirname(__file__),  "sprites", "Fundo.jpg")
 icon = pygame.image.load(icon_path)
 pygame.display.set_icon(icon)
-pygame.display.set_caption("Robot Defense")
+pygame.display.set_caption("Shooting Star")
 
 # Fonte usada nos botões ##### Procurar fonte ideal #####
 FONT_BUTTON = pygame.font.SysFont("Poppins", 67)
