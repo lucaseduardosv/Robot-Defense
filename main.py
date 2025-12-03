@@ -19,7 +19,7 @@ HIGHLIGHT = (255, 255, 0)  # amarelo para destacar os botões
 pygame.init()
 
 # Caminho do ícone (volta uma pasta e acessa teste.png)
-icon_path = os.path.join(os.path.dirname(__file__),  "sprites", "Fundo.png")
+icon_path = os.path.join(os.path.dirname(__file__),  "sprites", "Fundo.jpg")
 icon = pygame.image.load(icon_path)
 pygame.display.set_icon(icon)
 pygame.display.set_caption("Robot Defense")
@@ -31,7 +31,7 @@ FONT_BUTTON = pygame.font.SysFont("Poppins", 67)
 tela = pygame.display.set_mode((largura, altura))
 
 # Carrega a imagem de fundo do menu e ajusta para o tamanho da janela
-caminho_fundo = os.path.join(os.path.dirname(__file__), "sprites", "Fundo.png")
+caminho_fundo = os.path.join(os.path.dirname(__file__), "sprites", "Fundo.jpg")
 fundo_original = pygame.image.load(caminho_fundo)
 fundo = pygame.transform.scale(fundo_original, (largura, altura))
 
@@ -176,7 +176,7 @@ class Game:
         self.game_loop()
 
     def game_loop(self):
-       ''' clock = pygame.time.Clock()
+        clock = pygame.time.Clock()
         running = True
 
         while running:
@@ -192,8 +192,8 @@ class Game:
             pygame.display.flip()
             clock.tick(FPS)
 
-        pygame.quit()'''
-       main()
+        pygame.quit()
+        sys.quit()
        
 
 
