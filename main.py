@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from game import start_game_fire
 # --------- Configurações ---------
 largura = 1280         # largura da janela do jogo
 altura = 720           # altura da janela do jogo
@@ -143,9 +144,9 @@ class Menu:
         self.animation_done = False  # indica se animação terminou
 
     def start_game(self):
-        print("Iniciando o jogo...")
         self.running = False  # fecha o menu para iniciar o jogo
-
+        start_game_fire()
+         
     def show_options(self):
         print("Abrindo opções...")  # placeholder para futura tela de opções
 

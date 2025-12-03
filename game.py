@@ -263,126 +263,131 @@ class PU_TiroTriplo(PowerUp):
         super().__init__(x, y, (255, 100, 0))
 
 
-#GRUPOS
-todos_sprites = pygame.sprite.Group()
-inimigos = pygame.sprite.Group()
-tiros = pygame.sprite.Group()
-explosoes = pygame.sprite.Group()
-powerups = pygame.sprite.Group()
 
-jogador = Jogador(LARGURA // 2, ALTURA - 60)
-todos_sprites.add(jogador)
+def start_game_fire():
+    #GRUPOS
+    todos_sprites = pygame.sprite.Group()
+    
 
-pontos = 0
-spawn_timer = 0
-timer_tiro = 0
+    def criar_tiro(x, y, jogador_ref):
+        t = Tiro(x, y)
+        todos_sprites.add(t)
+        tiros.add(t)
+        
+    inimigos = pygame.sprite.Group()
+    tiros = pygame.sprite.Group()
+    explosoes = pygame.sprite.Group()
+    powerups = pygame.sprite.Group()
 
-rodando = True
-def criar_tiro(x, y, jogador_ref):
-    t = Tiro(x, y)
-    todos_sprites.add(t)
-    tiros.add(t)
+    jogador = Jogador(LARGURA // 2, ALTURA - 60)
+    todos_sprites.add(jogador)
 
-while rodando:
-    clock.tick(FPS)
+    pontos = 0
+    spawn_timer = 0
+    timer_tiro = 0
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            rodando = False
+    rodando = True
+   
+    while rodando:
+        clock.tick(FPS)
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if jogador.tem_tiro_triplo:
-                    criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-                    criar_tiro(jogador.rect.centerx - 18, jogador.rect.y, jogador)
-                    criar_tiro(jogador.rect.centerx + 18, jogador.rect.y, jogador)
-                else:
-                    criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                rodando = False
 
-    timer_tiro += 1
-    if pygame.mouse.get_pressed()[0] and timer_tiro >= 10:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if jogador.tem_tiro_triplo:
+                        criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
+                        criar_tiro(jogador.rect.centerx - 18, jogador.rect.y, jogador)
+                        criar_tiro(jogador.rect.centerx + 18, jogador.rect.y, jogador)
+                    else:
+                        criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
+
+        timer_tiro += 1
+        if pygame.mouse.get_pressed()[0] and timer_tiro >= 10:
+            if jogador.tem_tiro_triplo:
+                criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
+                criar_tiro(jogador.rect.centerx - 18, jogador.rect.y, jogador)
+                criar_tiro(jogador.rect.centerx + 18, jogador.rect.y, jogador)
+            else:
+                criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
+            timer_tiro = 0
+
+        spawn_timer += 1
+        if spawn_timer > 40:
+            tipo = random.choice(["zig", "rapido", "saltar", "ciclico"])
+            if tipo == "zig":
+                robo = RoboZigueZague(random.randint(40, LARGURA - 40), -40)
+            elif tipo == "rapido":
+                robo = RoboRapido(random.randint(40, LARGURA - 40), -40)
+            elif tipo == "saltar":
+                robo = RoboSaltador(random.randint(40, LARGURA - 40), -40)
+            elif tipo == "ciclico":
+                robo = RoboCiclico(random.randint(40, LARGURA - 40), -40)
+
+            todos_sprites.add(robo)
+            inimigos.add(robo)
+            spawn_timer = 0
+
+        if random.random() < 0.01:
+            tipo_p = random.choice(["vida", "vel", "triplo"])
+            x = random.randint(40, LARGURA - 40)
+            if tipo_p == "vida":
+                p = PU_VidaExtra(x, -30)
+            elif tipo_p == "vel":
+                p = PU_Velocidade(x, -30)
+            else:
+                p = PU_TiroTriplo(x, -30)
+            todos_sprites.add(p)
+            powerups.add(p)
+
+        colisoes = pygame.sprite.groupcollide(inimigos, tiros, False, True)
+        for robo, lista_tiros in colisoes.items():
+            if robo.explodindo:
+                continue
+
+            robo.start_explosion()
+
+            explosao = Explosion(robo.rect.center, target_enemy=robo)
+            todos_sprites.add(explosao)
+            explosoes.add(explosao)
+
+            pontos += 1
+        if pygame.sprite.spritecollide(jogador, inimigos, True):
+            jogador.vida -= 1
+            if jogador.vida <= 0:
+                print("GAME OVER!")
+                rodando = False
+
+        pegou = pygame.sprite.spritecollide(jogador, powerups, True)
+        for p in pegou:
+            if isinstance(p, PU_VidaExtra):
+                jogador.vida += 1
+            elif isinstance(p, PU_Velocidade):
+                jogador.bonus_velocidade = 3
+                jogador.tempo_velocidade = POWERUP_DURACAO
+            elif isinstance(p, PU_TiroTriplo):
+                jogador.tem_tiro_triplo = True
+                jogador.tempo_tiro_triplo = POWERUP_DURACAO
+
+        todos_sprites.update()
+        TELA.fill((20, 20, 20))
+        todos_sprites.draw(TELA)
+
+        font = pygame.font.SysFont(None, 30)
+        texto = font.render(f"Vida: {jogador.vida}  |  Pontos: {pontos}", True, (255, 255, 255))
+        TELA.blit(texto, (10, 10))
+
+        y_offset = 40
+        if jogador.bonus_velocidade > 0:
+            segundos = max(0, jogador.tempo_velocidade // FPS)
+            TELA.blit(font.render(f"Velocidade: {segundos}s", True, (255, 255, 255)), (10, y_offset))
+            y_offset += 22
         if jogador.tem_tiro_triplo:
-            criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-            criar_tiro(jogador.rect.centerx - 18, jogador.rect.y, jogador)
-            criar_tiro(jogador.rect.centerx + 18, jogador.rect.y, jogador)
-        else:
-            criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
-        timer_tiro = 0
+            segundos = max(0, jogador.tempo_tiro_triplo // FPS)
+            TELA.blit(font.render(f"Tiro Triplo: {segundos}s", True, (255, 255, 255)), (10, y_offset))
 
-    spawn_timer += 1
-    if spawn_timer > 40:
-        tipo = random.choice(["zig", "rapido", "saltar", "ciclico"])
-        if tipo == "zig":
-            robo = RoboZigueZague(random.randint(40, LARGURA - 40), -40)
-        elif tipo == "rapido":
-            robo = RoboRapido(random.randint(40, LARGURA - 40), -40)
-        elif tipo == "saltar":
-            robo = RoboSaltador(random.randint(40, LARGURA - 40), -40)
-        elif tipo == "ciclico":
-            robo = RoboCiclico(random.randint(40, LARGURA - 40), -40)
+        pygame.display.flip()
 
-        todos_sprites.add(robo)
-        inimigos.add(robo)
-        spawn_timer = 0
-
-    if random.random() < 0.01:
-        tipo_p = random.choice(["vida", "vel", "triplo"])
-        x = random.randint(40, LARGURA - 40)
-        if tipo_p == "vida":
-            p = PU_VidaExtra(x, -30)
-        elif tipo_p == "vel":
-            p = PU_Velocidade(x, -30)
-        else:
-            p = PU_TiroTriplo(x, -30)
-        todos_sprites.add(p)
-        powerups.add(p)
-
-    colisoes = pygame.sprite.groupcollide(inimigos, tiros, False, True)
-    for robo, lista_tiros in colisoes.items():
-        if robo.explodindo:
-            continue
-
-        robo.start_explosion()
-
-        explosao = Explosion(robo.rect.center, target_enemy=robo)
-        todos_sprites.add(explosao)
-        explosoes.add(explosao)
-
-        pontos += 1
-    if pygame.sprite.spritecollide(jogador, inimigos, True):
-        jogador.vida -= 1
-        if jogador.vida <= 0:
-            print("GAME OVER!")
-            rodando = False
-
-    pegou = pygame.sprite.spritecollide(jogador, powerups, True)
-    for p in pegou:
-        if isinstance(p, PU_VidaExtra):
-            jogador.vida += 1
-        elif isinstance(p, PU_Velocidade):
-            jogador.bonus_velocidade = 3
-            jogador.tempo_velocidade = POWERUP_DURACAO
-        elif isinstance(p, PU_TiroTriplo):
-            jogador.tem_tiro_triplo = True
-            jogador.tempo_tiro_triplo = POWERUP_DURACAO
-
-    todos_sprites.update()
-    TELA.fill((20, 20, 20))
-    todos_sprites.draw(TELA)
-
-    font = pygame.font.SysFont(None, 30)
-    texto = font.render(f"Vida: {jogador.vida}  |  Pontos: {pontos}", True, (255, 255, 255))
-    TELA.blit(texto, (10, 10))
-
-    y_offset = 40
-    if jogador.bonus_velocidade > 0:
-        segundos = max(0, jogador.tempo_velocidade // FPS)
-        TELA.blit(font.render(f"Velocidade: {segundos}s", True, (255, 255, 255)), (10, y_offset))
-        y_offset += 22
-    if jogador.tem_tiro_triplo:
-        segundos = max(0, jogador.tempo_tiro_triplo // FPS)
-        TELA.blit(font.render(f"Tiro Triplo: {segundos}s", True, (255, 255, 255)), (10, y_offset))
-
-    pygame.display.flip()
-
-pygame.quit()
+    pygame.quit()
