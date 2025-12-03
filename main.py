@@ -3,7 +3,7 @@ import sys
 import os
 from game import start_game_fire
 # --------- Configurações ---------
-largura = 1280         # largura da janela do jogo
+largura = 1280         # largura da janela do jog
 altura = 720           # altura da janela do jogo
 FPS = 60               # frames por segundo (velocidade do loop)
 
