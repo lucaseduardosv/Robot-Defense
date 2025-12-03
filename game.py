@@ -147,7 +147,8 @@ class RoboZigueZague(Robo):
 class RoboSaltador(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=2)
-        self.image = pygame.image.load("Robot-Defense-main/sprites/robosaltador.png").convert_alpha()
+        #self.image = pygame.image.load("Robot-Defense-main/sprites/robosaltador.png").convert_alpha()
+        self.image = pygame.image.load("sprites/robosaltador.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (40, 40))
         self.rect = self.image.get_rect(center=(x, y))
 
@@ -177,7 +178,8 @@ class RoboSaltador(Robo):
 class RoboCiclico(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade = 2)
-        self.image = pygame.image.load("Robot-Defense-main/sprites/RoboCiclico.png").convert_alpha()
+        #self.image = pygame.image.load("Robot-Defense-main/sprites/RoboCiclico.png").convert_alpha()
+        self.image = pygame.image.load("sprites/RoboCiclico.png").convert_alpha()
         self.raio = 60
         self.angulo = 0
         self.velang = 4.0

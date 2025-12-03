@@ -37,48 +37,89 @@ fundo = pygame.transform.scale(fundo_original, (largura, altura))
 
 
 class Button:
-    """Classe que representa um botão interativo no menu."""
-
     def __init__(self, text, pos, callback):
-        self.text = text                  # texto exibido no botão
-        self.callback = callback          # função chamada ao clicar no botão
-        self.default_color = WHITE        # cor padrão do texto
-        self.highlight_color = HIGHLIGHT  # cor quando mouse está em cima
-        self.font = FONT_BUTTON           # fonte usada
-        self.label = self.font.render(self.text, True, self.default_color)
-        self.rect = self.label.get_rect(center=pos)  # retângulo para detectar clique e posição
+        self.text = text
+        self.callback = callback
+        
+        # Cores do degradê
+        self.top_color = (255, 200, 95)
+        self.bottom_color = (125, 88, 59)
+
+        # Fonte pixelada
+        font_path = os.path.join(os.path.dirname(__file__), "PressStart2P-Regular.ttf")
+        self.font = pygame.font.Font(font_path, 55)
+
+        # Render inicial (será sobrescrito pelo degradê depois)
+        self.label = self.font.render(self.text.upper(), True, (255, 255, 255))
+        self.rect = self.label.get_rect(center=pos)
+        # sombra do texto
+        self.shadow_color = (0, 0, 0, 140)  # preto translúcido
+        self.shadow_offset = (4, 4)         # deslocamento da sombra
+
+        # contorno estilo pixel art
+        self.outline_color = (87, 43, 39)
+        self.outline_offsets = [
+            (-2, -2), (-2, 0), (-2, 2),
+            (0, -2),          (0, 2),
+            (2, -2),  (2, 0), (2, 2)
+        ]
+
+    def make_gradient_text(self):
+        """Renderiza o texto com degradê vertical."""
+        base = self.font.render(self.text.upper(), True, (255, 255, 255))
+        w, h = base.get_size()
+
+        gradient = pygame.Surface((w, h), pygame.SRCALPHA)
+
+        for y in range(h):
+            t = y / h
+            r = int(self.top_color[0] * (1 - t) + self.bottom_color[0] * t)
+            g = int(self.top_color[1] * (1 - t) + self.bottom_color[1] * t)
+            b = int(self.top_color[2] * (1 - t) + self.bottom_color[2] * t)
+
+            pygame.draw.line(gradient, (r, g, b), (0, y), (w, y))
+
+        base.blit(gradient, (0, 0), special_flags=pygame.BLEND_MULT)
+
+        return base
 
     def draw(self, surface, mouse_pos):
-        # Define cor do texto: destaca se mouse estiver sobre o botão
-        if self.rect.collidepoint(mouse_pos):
-            color = self.highlight_color
+        hovered = self.rect.collidepoint(mouse_pos)
+
+        # Efeito de highlight (deixa o degradê mais claro)
+        if hovered:
+            bright = pygame.Surface(self.label.get_size(), pygame.SRCALPHA)
+            bright.fill((40, 40, 40, 0))  # efeito leve
         else:
-            color = self.default_color
+            bright = None
 
-        outline_color = BLACK  # cor da borda do texto para melhor leitura
-        offsets = [(-1, -1), (-1, 0), (-1, 1),
-                   (0, -1),           (0, 1),
-                   (1, -1),  (1, 0),  (1, 1)]
+        shadow_surf = self.make_gradient_text()
+        shadow_surf.fill(self.shadow_color, special_flags=pygame.BLEND_RGBA_MIN)
+        shadow_rect = self.rect.move(self.shadow_offset)
+        surface.blit(shadow_surf, shadow_rect)
 
-        # Desenha a borda do texto com pequenos deslocamentos para criar efeito contorno
-        for ox, oy in offsets:
+        # contorno estilo pixel art
+        for ox, oy in self.outline_offsets:
             pos = self.rect.move(ox, oy)
-            outline_surf = self.font.render(self.text, True, outline_color)
+            outline_surf = self.font.render(self.text.upper(), True, self.outline_color)
             surface.blit(outline_surf, pos)
 
-        # Desenha o texto principal
-        text_surf = self.font.render(self.text, True, color)
-        surface.blit(text_surf, self.rect)
+        # Renderiza o degradê
+        gradient_text = self.make_gradient_text()
+
+        # Se está com highlight, aplica brilho
+        if hovered:
+            gradient_text.blit(bright, (0, 0), special_flags=pygame.BLEND_ADD)
+
+        # desenhar o texto final
+        surface.blit(gradient_text, self.rect)
 
     def check_click(self, mouse_pos):
-        # Se o clique aconteceu dentro do botão, executa a ação (callback)
         if self.rect.collidepoint(mouse_pos):
             self.callback()
 
-
 class Menu:
     """Classe que gerencia o menu principal do jogo."""
-
     def __init__(self, screen):
         self.screen = screen
         mid_x = largura // 2      # posição horizontal central para os botões
@@ -193,7 +234,7 @@ class Game:
             clock.tick(FPS)
 
         pygame.quit()
-        sys.quit()
+        sys.exit()
        
 
 
