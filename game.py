@@ -151,18 +151,24 @@ class RoboRapido(Robo):
 
 
 class RoboZigueZague(Robo):
-    def __init__(self, x, y):
+    def __init__(self, x, y, n_pixels=200):
         super().__init__(x, y, velocidade=3)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "Robozigzag.png")).convert_alpha()
+        self.image = pygame.transform.scale_by(self.image, 0.5)     
+        self.rect = self.image.get_rect(topleft=(x, y))
         self.direcao = 1
+        self.n_pixels = n_pixels
+        self.distancia_percorrida = 0
 
     def atualizar_posicao(self):
         self.rect.y += self.velocidade
-        self.rect.x += self.direcao * 3
+        deslocamento = self.direcao * 3
+        self.rect.x += deslocamento
+        self.distancia_percorrida += abs(deslocamento)
 
-        if self.rect.x <= 0 or self.rect.x >= LARGURA - 40:
+        if self.distancia_percorrida >= self.n_pixels:
             self.direcao *= -1
-
+            self.distancia_percorrida = 0
 
 class RoboSaltador(Robo):
     def __init__(self, x, y):
