@@ -2,6 +2,7 @@ import pygame
 import random
 import sys 
 import math
+import os
 
 pygame.init()
 
@@ -14,10 +15,13 @@ clock = pygame.time.Clock()
 
 # Duração dos power-ups em ticks (FPS * segundos). Ex.: 60 * 5 = 5s
 POWERUP_DURACAO = 60 * 5
-SOM_POWER_UP = pygame.mixer.Sound("Robot-Defense-main/som/power up.ogg")
-SOM_EXPLOSAO = pygame.mixer.Sound("Robot-Defense-main/som/som-explosão.wav")
-SOM_TIRO = pygame.mixer.Sound("Robot-Defense-main/som/Som-laser.wav")
-SOM_DANO = pygame.mixer.Sound("Robot-Defense-main/som/som-dano.mp3")
+
+BASE = os.path.dirname(__file__)
+# Sons
+SOM_POWER_UP = pygame.mixer.Sound(os.path.join(BASE, "som", "power up.ogg"))
+SOM_EXPLOSAO = pygame.mixer.Sound(os.path.join(BASE, "som", "som-explosão.wav"))
+SOM_TIRO = pygame.mixer.Sound(os.path.join(BASE, "som", "Som-laser.wav"))
+SOM_DANO = pygame.mixer.Sound(os.path.join(BASE, "som", "som-dano.mp3"))
 
 # CLASSE BASE
 class Entidade(pygame.sprite.Sprite):
@@ -116,7 +120,7 @@ class Robo(Entidade):
 class RoboLento(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=1)  #bem lento
-        self.image = pygame.image.load("Robot-Defense-main/sprites/robo_lento.png").convert_alpha()
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "robo_lento.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (40, 40))
         self.rect = self.image.get_rect(center=(x, y))
     def atualizar_posicao(self):
@@ -130,7 +134,7 @@ class RoboLento(Robo):
 class RoboRapido(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=6)
-        self.image = pygame.image.load("Robot-Defense-main/sprites/RoboRapido.png").convert_alpha()
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboRapido.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (40, 40))
         self.jitter = random.choice([-1, 0, 1])
 
@@ -149,7 +153,7 @@ class RoboRapido(Robo):
 class RoboZigueZague(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=3)
-        self.image = pygame.image.load("Robot-Defense-main/sprites/Robozigzag.png").convert_alpha()
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "Robozigzag.png")).convert_alpha()
         self.direcao = 1
 
     def atualizar_posicao(self):
@@ -163,7 +167,7 @@ class RoboZigueZague(Robo):
 class RoboSaltador(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=2)
-        self.image = pygame.image.load("Robot-Defense-main/sprites/robosaltador.png").convert_alpha()
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "robosaltador.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (40, 40))
         self.rect = self.image.get_rect(center=(x, y))
 
@@ -193,7 +197,7 @@ class RoboSaltador(Robo):
 class RoboCiclico(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade = 2)
-        self.image = pygame.image.load("Robot-Defense-main/sprites/RoboCiclico.png").convert_alpha()
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboCiclico.png")).convert_alpha()
         self.raio = 60
         self.angulo = 0
         self.velang = 4.0
