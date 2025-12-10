@@ -23,6 +23,9 @@ SOM_EXPLOSAO = pygame.mixer.Sound(os.path.join(BASE, "som", "som-explosão.wav")
 SOM_TIRO = pygame.mixer.Sound(os.path.join(BASE, "som", "Som-laser.wav"))
 SOM_DANO = pygame.mixer.Sound(os.path.join(BASE, "som", "som-dano.mp3"))
 
+# Carregar imagem de fundo
+FUNDO = pygame.image.load(os.path.join(BASE, "sprites", "background.png")).convert()
+
 # CLASSE BASE
 class Entidade(pygame.sprite.Sprite):
     def __init__(self, x, y, velocidade):
@@ -407,7 +410,8 @@ def start_game_fire():
                 jogador.tempo_tiro_triplo = POWERUP_DURACAO
 
         todos_sprites.update()
-        TELA.fill((20, 20, 20))
+        # Desenhar fundo
+        TELA.blit(FUNDO, (0, 0))
         todos_sprites.draw(TELA)
 
         font = pygame.font.SysFont(None, 30)
