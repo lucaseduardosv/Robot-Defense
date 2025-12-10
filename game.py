@@ -121,7 +121,7 @@ class RoboLento(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=1)  #bem lento
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "robo_lento.png")).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (40, 40))
+        self.image = pygame.transform.scale(self.image, (90, 90))
         self.rect = self.image.get_rect(center=(x, y))
     def atualizar_posicao(self):
         #movimento lento reto para baixo
@@ -135,7 +135,7 @@ class RoboRapido(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=6)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboRapido.png")).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (40, 40))
+        self.image = pygame.transform.scale(self.image, (80, 80))
         self.jitter = random.choice([-1, 0, 1])
 
     def atualizar_posicao(self):
@@ -174,7 +174,7 @@ class RoboSaltador(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=2)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "robosaltador.png")).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (40, 40))
+        self.image = pygame.transform.scale(self.image, (80, 80))
         self.rect = self.image.get_rect(center=(x, y))
 
         #comportamentos
