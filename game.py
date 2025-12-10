@@ -40,7 +40,9 @@ class Entidade(pygame.sprite.Sprite):
 class Jogador(Entidade):
     def __init__(self, x, y):
         super().__init__(x, y, 5)
-        self.image.fill((0, 255, 0))  # verde
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "jogador.png")).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (40, 40))
+        self.rect = self.image.get_rect(center=(x, y))
         self.vida = 5
 
         # Power-ups / estados
