@@ -6,8 +6,8 @@ import os
 
 pygame.init()
 
-LARGURA = 800
-ALTURA = 600
+LARGURA = 1280
+ALTURA = 720
 TELA = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Robot Defense - Template")
 FPS = 60
@@ -23,8 +23,9 @@ SOM_EXPLOSAO = pygame.mixer.Sound(os.path.join(BASE, "som", "som-explosão.wav")
 SOM_TIRO = pygame.mixer.Sound(os.path.join(BASE, "som", "Som-laser.wav"))
 SOM_DANO = pygame.mixer.Sound(os.path.join(BASE, "som", "som-dano.mp3"))
 
-# Carregar imagem de fundo
-FUNDO = pygame.image.load(os.path.join(BASE, "sprites", "background.png")).convert()
+# Carregar imagem de fundo e ajustar para o tamanho exato da tela (sem rolagem)
+img_fundo_orig = pygame.image.load(os.path.join(BASE, "sprites", "background.png")).convert()
+FUNDO = pygame.transform.scale(img_fundo_orig, (LARGURA, ALTURA))
 
 # CLASSE BASE
 class Entidade(pygame.sprite.Sprite):
@@ -42,7 +43,7 @@ class Entidade(pygame.sprite.Sprite):
 # JOGADOR
 class Jogador(Entidade):
     def __init__(self, x, y):
-        super().__init__(x, y, 5)
+        super().__init__(x, y, 7)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "jogador.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (95, 95))
         self.rect = self.image.get_rect(center=(x, y))
@@ -67,9 +68,9 @@ class Jogador(Entidade):
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.mover(vel, 0)
 
-        # Limitar dentro da tela
-        self.rect.x = max(0, min(self.rect.x, LARGURA - 40))
-        self.rect.y = max(0, min(self.rect.y, ALTURA - 40))
+        # Limitar dentro da tela (usando o tamanho real da imagem para não cortar)
+        self.rect.x = max(0, min(self.rect.x, LARGURA - self.rect.width))
+        self.rect.y = max(0, min(self.rect.y, ALTURA - self.rect.height))
 
         # CONTAGEM DOS POWERUPS
         if self.tem_tiro_triplo:
@@ -124,7 +125,7 @@ class Robo(Entidade):
 
 class RoboLento(Robo):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidade=1)  #bem lento
+        super().__init__(x, y, velocidade=2)  #bem lento
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "robo_lento.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (90, 90))
         self.rect = self.image.get_rect(center=(x, y))
@@ -138,7 +139,7 @@ class RoboLento(Robo):
 
 class RoboRapido(Robo):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidade=6)
+        super().__init__(x, y, velocidade=7)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboRapido.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (80, 80))
         self.jitter = random.choice([-1, 0, 1])
@@ -150,14 +151,15 @@ class RoboRapido(Robo):
         if self.rect.x < 0:
             self.rect.x = 0
             self.jitter *= -1
-        if self.rect.x > LARGURA - 40:
-            self.rect.x = LARGURA - 40
+        # Correção do limite direito
+        if self.rect.x > LARGURA - self.rect.width:
+            self.rect.x = LARGURA - self.rect.width
             self.jitter *= -1
 
 
 class RoboZigueZague(Robo):
-    def __init__(self, x, y, n_pixels=200):
-        super().__init__(x, y, velocidade=3)
+    def __init__(self, x, y, n_pixels=250):
+        super().__init__(x, y, velocidade=4)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "Robozigzag.png")).convert_alpha()
         self.image = pygame.transform.scale_by(self.image, 0.5)     
         self.rect = self.image.get_rect(topleft=(x, y))
@@ -177,7 +179,7 @@ class RoboZigueZague(Robo):
 
 class RoboSaltador(Robo):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidade=2)
+        super().__init__(x, y, velocidade=3)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "robosaltador.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (80, 80))
         self.rect = self.image.get_rect(center=(x, y))
@@ -187,13 +189,14 @@ class RoboSaltador(Robo):
         self.salto_cooldown = random.randint(30, 90)
         self.salto_timer = 0
         self.dir_x = random.choice([-1, 1])  
-        self.vel_x = random.randint(2, 4)   
+        self.vel_x = random.randint(2, 5)   
 
     def atualizar_posicao(self):
         #movimentos (verticais e horizontais)
         self.rect.y += self.velocidade
         self.rect.x += self.dir_x * self.vel_x
-        if self.rect.x <= 0 or self.rect.x >= LARGURA - 40:
+        # Correção limites laterais
+        if self.rect.x <= 0 or self.rect.x >= LARGURA - self.rect.width:
             self.dir_x *= -1
 
         self.salto_timer += 1
@@ -207,7 +210,7 @@ class RoboSaltador(Robo):
 
 class RoboCiclico(Robo):
     def __init__(self, x, y):
-        super().__init__(x, y, velocidade = 2)
+        super().__init__(x, y, velocidade = 3)
         self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboCiclico.png")).convert_alpha()
         self.raio = 60
         self.angulo = 0
@@ -269,7 +272,7 @@ class PowerUp(pygame.sprite.Sprite):
         self.image = pygame.Surface((30, 30))
         self.image.fill(cor)
         self.rect = self.image.get_rect(center=(x, y))
-        self.vel = 2
+        self.vel = 3
 
     def update(self):
         self.rect.y += self.vel
@@ -294,15 +297,17 @@ class PU_TiroTriplo(PowerUp):
 
 
 def start_game_fire():
+    # Garante a resolução correta ao iniciar o jogo
+    global TELA
+    TELA = pygame.display.set_mode((LARGURA, ALTURA))
+
     #GRUPOS
     todos_sprites = pygame.sprite.Group()
     
-
     def criar_tiro(x, y, jogador_ref):
         t = Tiro(x, y)
         todos_sprites.add(t)
         tiros.add(t)
-
         SOM_TIRO.play()
         
     inimigos = pygame.sprite.Group()
@@ -310,7 +315,7 @@ def start_game_fire():
     explosoes = pygame.sprite.Group()
     powerups = pygame.sprite.Group()
 
-    jogador = Jogador(LARGURA // 2, ALTURA - 60)
+    jogador = Jogador(LARGURA // 2, ALTURA - 100)
     todos_sprites.add(jogador)
 
     pontos = 0
@@ -325,8 +330,10 @@ def start_game_fire():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 rodando = False
-
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    rodando = False
+
                 if event.key == pygame.K_SPACE:
                     if jogador.tem_tiro_triplo:
                         criar_tiro(jogador.rect.centerx, jogador.rect.y, jogador)
@@ -348,16 +355,19 @@ def start_game_fire():
         spawn_timer += 1
         if spawn_timer > 40:
             tipo = random.choice(["zig", "rapido", "saltar", "ciclico", "lento"])
+            # Ajustei o spawn para garantir que nasçam dentro da tela larga
+            start_x = random.randint(50, LARGURA - 100)
+            
             if tipo == "zig":
-                robo = RoboZigueZague(random.randint(40, LARGURA - 40), -40)
+                robo = RoboZigueZague(start_x, -40)
             elif tipo == "rapido":
-                robo = RoboRapido(random.randint(40, LARGURA - 40), -40)
+                robo = RoboRapido(start_x, -40)
             elif tipo == "saltar":
-                robo = RoboSaltador(random.randint(40, LARGURA - 40), -40)
+                robo = RoboSaltador(start_x, -40)
             elif tipo == "ciclico":
-                robo = RoboCiclico(random.randint(40, LARGURA - 40), -40)
+                robo = RoboCiclico(start_x, -40)
             elif tipo == "lento":
-                robo = RoboLento(random.randint(40, LARGURA - 40), -40)
+                robo = RoboLento(start_x, -40)
 
             todos_sprites.add(robo)
             inimigos.add(robo)
@@ -365,7 +375,7 @@ def start_game_fire():
 
         if random.random() < 0.01:
             tipo_p = random.choice(["vida", "vel", "triplo"])
-            x = random.randint(40, LARGURA - 40)
+            x = random.randint(50, LARGURA - 100)
             if tipo_p == "vida":
                 p = PU_VidaExtra(x, -30)
             elif tipo_p == "vel":
@@ -381,7 +391,6 @@ def start_game_fire():
                 continue
 
             robo.start_explosion()
-
             SOM_EXPLOSAO.play()
 
             explosao = Explosion(robo.rect.center, target_enemy=robo)
@@ -389,6 +398,7 @@ def start_game_fire():
             explosoes.add(explosao)
 
             pontos += 1
+        
         if pygame.sprite.spritecollide(jogador, inimigos, True):
             SOM_DANO.play()
             jogador.vida -= 1
@@ -410,8 +420,10 @@ def start_game_fire():
                 jogador.tempo_tiro_triplo = POWERUP_DURACAO
 
         todos_sprites.update()
-        # Desenhar fundo
+
+        # Desenhar fundo FIXO (preenchendo tudo)
         TELA.blit(FUNDO, (0, 0))
+
         todos_sprites.draw(TELA)
 
         font = pygame.font.SysFont(None, 30)
@@ -429,4 +441,4 @@ def start_game_fire():
 
         pygame.display.flip()
 
-    pygame.quit()
+    # pygame.quit()
