@@ -283,17 +283,20 @@ class PowerUp(pygame.sprite.Sprite):
 class PU_VidaExtra(PowerUp):
     def __init__(self, x, y):
         super().__init__(x, y, (0, 150, 255))
-
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "power_up_vida.png")).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (30, 30))
 
 class PU_Velocidade(PowerUp):
     def __init__(self, x, y):
         super().__init__(x, y, (255, 255, 0))
-
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "power_up_velocidade.png")).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (30, 30))
 
 class PU_TiroTriplo(PowerUp):
     def __init__(self, x, y):
         super().__init__(x, y, (255, 100, 0))
-
+        self.image = pygame.image.load(os.path.join(BASE, "sprites", "power_up_tiro_triplo.png")).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (30, 30))
 
 
 def start_game_fire():
