@@ -1,6 +1,6 @@
 import pygame
 import random
-import sys 
+import sys
 import math
 import os
 
@@ -13,34 +13,29 @@ pygame.display.set_caption("Robot Defense")
 FPS = 60
 clock = pygame.time.Clock()
 
-# CONFIGURAÇÕES DE JOGO
 POWERUP_DURACAO = 60 * 5
-PONTOS_PARA_BOSS = 30  # Pontos para o chefão aparecer
+PONTOS_PARA_BOSS = 30
 
 BASE = os.path.dirname(__file__)
 
-# Função auxiliar para carregar sons sem travar o jogo
 def carregar_som(nome):
     path = os.path.join(BASE, "som", nome)
     try:
         return pygame.mixer.Sound(path)
     except:
-        return pygame.mixer.Sound(buffer=bytearray([0]*100)) # Som vazio
+        return pygame.mixer.Sound(buffer=bytearray([0]*100))
 
 SOM_POWER_UP = carregar_som("power up.ogg")
 SOM_EXPLOSAO = carregar_som("som-explosão.wav")
 SOM_TIRO = carregar_som("Som-laser.wav")
 SOM_DANO = carregar_som("som-dano.mp3")
 
-# Carregar fundo
 try:
     img_fundo_orig = pygame.image.load(os.path.join(BASE, "sprites", "background.png")).convert()
     FUNDO = pygame.transform.scale(img_fundo_orig, (LARGURA, ALTURA))
 except:
     FUNDO = pygame.Surface((LARGURA, ALTURA))
-    FUNDO.fill((30, 30, 30)) # Cinza escuro se faltar imagem
-
-# --- CLASSES ---
+    FUNDO.fill((30, 30, 30))
 
 class Entidade(pygame.sprite.Sprite):
     def __init__(self, x, y, velocidade):
@@ -60,7 +55,7 @@ class Jogador(Entidade):
             self.image = pygame.image.load(os.path.join(BASE, "sprites", "jogador.png")).convert_alpha()
             self.image = pygame.transform.scale(self.image, (95, 95))
         except:
-            self.image.fill((0, 255, 0)) # Quadrado verde debug
+            self.image.fill((0, 255, 0))
         self.rect = self.image.get_rect(center=(x, y))
         self.vida = 5
         self.bonus_velocidade = 0
@@ -80,7 +75,6 @@ class Jogador(Entidade):
         self.rect.x = max(0, min(self.rect.x, LARGURA - self.rect.width))
         self.rect.y = max(0, min(self.rect.y, ALTURA - self.rect.height))
 
-        # Timers dos Powerups
         if self.tem_tiro_triplo:
             self.tempo_tiro_triplo -= 1
             if self.tempo_tiro_triplo <= 0: self.tem_tiro_triplo = False
@@ -128,7 +122,6 @@ class Robo(Entidade):
     def atualizar_posicao(self):
         raise NotImplementedError
 
-# --- ROBÔS COM VELOCIDADE AJUSTADA ---
 class RoboLento(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=2)
@@ -142,12 +135,12 @@ class RoboLento(Robo):
 
 class RoboRapido(Robo):
     def __init__(self, x, y):
-        # AJUSTE DE VELOCIDADE: De 7 para 5 (Média)
-        super().__init__(x, y, velocidade=5) 
+        super().__init__(x, y, velocidade=5)
         try:
             self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboRapido.png")).convert_alpha()
             self.image = pygame.transform.scale(self.image, (80, 80))
         except: self.image.fill((200,50,50))
+        self.rect = self.image.get_rect(center=(x,y))
         self.jitter = random.choice([-1, 0, 1])
     def atualizar_posicao(self):
         self.rect.y += self.velocidade
@@ -157,11 +150,10 @@ class RoboRapido(Robo):
 
 class RoboZigueZague(Robo):
     def __init__(self, x, y, n_pixels=250):
-        # AJUSTE DE VELOCIDADE: De 4 para 3 (Média)
         super().__init__(x, y, velocidade=3)
         try:
             self.image = pygame.image.load(os.path.join(BASE, "sprites", "Robozigzag.png")).convert_alpha()
-            self.image = pygame.transform.scale_by(self.image, 0.5)
+            self.image = pygame.transform.scale(self.image, (70, 70))
         except: self.image.fill((50,200,50))
         self.rect = self.image.get_rect(topleft=(x, y))
         self.direcao = 1
@@ -187,8 +179,8 @@ class RoboSaltador(Robo):
         self.salto_forca = random.randint(12, 28)
         self.salto_cooldown = random.randint(30, 90)
         self.salto_timer = 0
-        self.dir_x = random.choice([-1, 1])  
-        self.vel_x = random.randint(2, 5)   
+        self.dir_x = random.choice([-1, 1])
+        self.vel_x = random.randint(2, 5)
     def atualizar_posicao(self):
         self.rect.y += self.velocidade
         self.rect.x += self.dir_x * self.vel_x
@@ -204,7 +196,10 @@ class RoboCiclico(Robo):
         super().__init__(x, y, velocidade=3)
         try:
             self.image = pygame.image.load(os.path.join(BASE, "sprites", "RoboCiclico.png")).convert_alpha()
-        except: self.image.fill((255,0,255))
+            self.image = pygame.transform.scale(self.image, (60, 60))
+        except: 
+            self.image = pygame.Surface((60, 60))
+            self.image.fill((255,0,255))
         self.raio = 60
         self.angulo = 0
         self.velang = 4.0
@@ -218,13 +213,10 @@ class RoboCiclico(Robo):
         self.rect.x = int(self.centrox + self.raio * math.cos(rad))
         self.rect.y = int(self.centroy + self.raio * math.sin(rad))
 
-# --- CLASS CHEFÃO (CORRIGIDA) ---
 class RoboChefao(Entidade):
     def __init__(self, x, y, jogador_alvo):
         super().__init__(x, y, velocidade=4)
-        # Recebe e guarda quem é o jogador para mirar nele
-        self.jogador_alvo = jogador_alvo 
-        
+        self.jogador_alvo = jogador_alvo
         try:
             self.image_original = pygame.image.load(os.path.join(BASE, "sprites", "boss2.png")).convert_alpha()
         except:
@@ -239,23 +231,21 @@ class RoboChefao(Entidade):
         self.vida = self.vida_max
         self.furia_ativa = False
         
-        self.estado = 'entrada' 
-        self.destino_y = 150 
+        self.estado = 'entrada'
+        self.destino_y = 150
         
         self.timer_tiro = 0
-        self.cooldown_tiro = 60 
+        self.cooldown_tiro = 60
         self.timer_dash = 0
         self.cooldown_dash = 240
         
         self.dir_move = 1
         self.dash_vector = pygame.math.Vector2(0, 0)
 
-    # REMOVIDO ARGUMENTO DAQUI. O Boss já sabe quem é o self.jogador_alvo
     def update(self):
-        # Fúria
         if self.vida <= self.vida_max / 2 and not self.furia_ativa:
             self.furia_ativa = True
-            self.cooldown_tiro = 25 
+            self.cooldown_tiro = 25
             self.velocidade = 7
             self.cooldown_dash = 150
             vermelho = pygame.Surface(self.image_original.get_size()).convert_alpha()
@@ -281,19 +271,18 @@ class RoboChefao(Entidade):
             
             self.timer_tiro += 1
             if self.timer_tiro >= self.cooldown_tiro:
-                self.timer_tiro = 0 # Tiro acontece no main
+                self.timer_tiro = 0
 
         elif self.estado == 'preparando_dash':
             jitter_x = random.randint(-5, 5)
             self.rect.x += jitter_x
-            self.timer_dash += 1 
-            if self.timer_dash > 40: 
+            self.timer_dash += 1
+            if self.timer_dash > 40:
                 self.estado = 'dashing'
-                # USA A REFERÊNCIA GUARDADA NO __INIT__
                 if self.jogador_alvo and self.jogador_alvo.alive():
                     px, py = self.jogador_alvo.rect.center
                 else:
-                    px, py = LARGURA//2, ALTURA # Mira no centro se jogador morreu
+                    px, py = LARGURA//2, ALTURA
 
                 start = pygame.math.Vector2(self.rect.center)
                 end = pygame.math.Vector2(px, py)
@@ -374,12 +363,15 @@ class PU_TiroTriplo(PowerUp):
 
 def start_game_fire():
     global TELA
+    pygame.font.init()
+    fonte_hud = pygame.font.SysFont("Arial", 25, bold=True)
+    
     TELA = pygame.display.set_mode((LARGURA, ALTURA))
 
     todos_sprites = pygame.sprite.Group()
     inimigos = pygame.sprite.Group()
     tiros_jogador = pygame.sprite.Group()
-    tiros_inimigo = pygame.sprite.Group() 
+    tiros_inimigo = pygame.sprite.Group()
     explosoes = pygame.sprite.Group()
     powerups = pygame.sprite.Group()
     boss_group = pygame.sprite.GroupSingle()
@@ -397,10 +389,7 @@ def start_game_fire():
     spawn_timer = 0
     timer_tiro_mouse = 0
     boss_ativo = False
-    
-    # Intervalo de spawn: Quanto menor, mais inimigos
-    # Começa em 45 (antes era 60), então nascem mais rápido
-    intervalo_spawn = 45 
+    intervalo_spawn = 45
 
     rodando = True
     while rodando:
@@ -428,11 +417,8 @@ def start_game_fire():
                 criar_tiro(jogador.rect.centerx, jogador.rect.y)
             timer_tiro_mouse = 0
 
-        # --- SPAWN DE INIMIGOS ---
         if not boss_ativo:
             spawn_timer += 1
-            
-            # Spawnar Boss
             if pontos >= PONTOS_PARA_BOSS:
                 boss_ativo = True
                 for inimigo in inimigos:
@@ -440,13 +426,10 @@ def start_game_fire():
                     explosao = Explosion(inimigo.rect.center)
                     todos_sprites.add(explosao)
                 
-                # CORREÇÃO CRÍTICA: Passamos o objeto 'jogador' para o Boss
                 o_boss = RoboChefao(LARGURA//2, -200, jogador)
                 boss_group.add(o_boss)
                 todos_sprites.add(o_boss)
-                print("ATENÇÃO: O CHEFÃO CHEGOU!")
             
-            # Spawn normal (Mais rápido agora)
             elif spawn_timer > intervalo_spawn:
                 tipo = random.choice(["zig", "rapido", "saltar", "ciclico", "lento"])
                 start_x = random.randint(50, LARGURA - 100)
@@ -459,30 +442,20 @@ def start_game_fire():
                 
                 todos_sprites.add(r)
                 inimigos.add(r)
-                
                 spawn_timer = 0
-                # Diminui o intervalo conforme pontos, até um limite mínimo de 15 frames (muitos robôs!)
-                intervalo_spawn = max(15, 45 - (pontos // 2))
+                intervalo_spawn = max(15, 45 - (pontos // 5))
 
-        # --- LÓGICA DO BOSS ---
         if boss_ativo and boss_group:
             boss = boss_group.sprite
-            # Boss atira baseado no timer interno dele
             if boss.estado == 'movendo' and boss.timer_tiro == 0:
-                if boss.furia_ativa:
-                    angles = [70, 80, 90, 100, 110]
-                    spd = 11
-                else:
-                    angles = [80, 90, 100]
-                    spd = 8
-                
+                angles = [70, 80, 90, 100, 110] if boss.furia_ativa else [80, 90, 100]
+                spd = 11 if boss.furia_ativa else 8
                 for ang in angles:
                     tb = TiroInimigo(boss.rect.centerx, boss.rect.bottom, angle=ang, speed=spd)
                     todos_sprites.add(tb)
                     tiros_inimigo.add(tb)
 
-        # Powerups
-        if random.random() < 0.005:
+        if random.random() < 0.003:
             tipo_p = random.choice(["vida", "vel", "triplo"])
             x = random.randint(50, LARGURA - 100)
             if tipo_p == "vida": p = PU_VidaExtra(x, -30)
@@ -491,8 +464,18 @@ def start_game_fire():
             todos_sprites.add(p)
             powerups.add(p)
 
-        # --- COLISÕES ---
-        # 1. Jogador vs Inimigos Normais
+        hits_powerup = pygame.sprite.spritecollide(jogador, powerups, True)
+        for p in hits_powerup:
+            SOM_POWER_UP.play()
+            if isinstance(p, PU_VidaExtra):
+                jogador.vida += 1
+            elif isinstance(p, PU_Velocidade):
+                jogador.bonus_velocidade = 5
+                jogador.tempo_velocidade = 400
+            elif isinstance(p, PU_TiroTriplo):
+                jogador.tem_tiro_triplo = True
+                jogador.tempo_tiro_triplo = 400
+
         colisoes = pygame.sprite.groupcollide(inimigos, tiros_jogador, False, True)
         for robo, lista_tiros in colisoes.items():
             if robo.explodindo: continue
@@ -503,7 +486,6 @@ def start_game_fire():
             explosoes.add(explosao)
             pontos += 1
         
-        # 2. Jogador vs Boss
         if boss_ativo:
             boss = boss_group.sprite
             hits = pygame.sprite.spritecollide(boss, tiros_jogador, True)
@@ -512,5 +494,59 @@ def start_game_fire():
                 SOM_DANO.play()
                 if boss.vida <= 0:
                     SOM_EXPLOSAO.play()
-                    for _ in range(5):
-                        ex = Explosion((boss.rect.centerx + random.randint(-5
+                    for _ in range(8):
+                        offset_x = random.randint(-60, 60)
+                        offset_y = random.randint(-60, 60)
+                        ex = Explosion((boss.rect.centerx + offset_x, boss.rect.centery + offset_y))
+                        todos_sprites.add(ex)
+                    boss.kill()
+                    boss_ativo = False
+                    pontos += 100
+
+        hits_player_tiro = pygame.sprite.spritecollide(jogador, tiros_inimigo, True)
+        hits_player_corpo = pygame.sprite.spritecollide(jogador, inimigos, True)
+        dano_total = len(hits_player_tiro) + len(hits_player_corpo)
+        
+        if boss_ativo and boss_group:
+            if pygame.sprite.collide_rect(jogador, boss_group.sprite):
+                 dano_total += 1
+                 if jogador.rect.x < boss_group.sprite.rect.x: jogador.rect.x -= 30
+                 else: jogador.rect.x += 30
+
+        if dano_total > 0:
+            SOM_DANO.play()
+            jogador.vida -= 1
+            if jogador.vida <= 0:
+                print(f"Game Over! Pontos: {pontos}")
+                rodando = False
+
+        todos_sprites.update()
+        TELA.blit(FUNDO, (0, 0))
+        todos_sprites.draw(TELA)
+        
+        texto_pontos = fonte_hud.render(f"PONTOS: {pontos}", True, (255, 255, 255))
+        texto_vida = fonte_hud.render(f"VIDA: {jogador.vida}", True, (255, 50, 50))
+        sombra_pontos = fonte_hud.render(f"PONTOS: {pontos}", True, (0, 0, 0))
+        
+        TELA.blit(sombra_pontos, (22, 22))
+        TELA.blit(texto_pontos, (20, 20))
+        TELA.blit(texto_vida, (20, 50))
+
+        if boss_ativo and boss_group:
+            boss = boss_group.sprite
+            largura_barra = 400
+            altura_barra = 20
+            pos_x_barra = (LARGURA - largura_barra) // 2
+            pos_y_barra = 20
+            pygame.draw.rect(TELA, (50, 50, 50), (pos_x_barra, pos_y_barra, largura_barra, altura_barra))
+            porcentagem_vida = max(0, boss.vida / boss.vida_max)
+            largura_atual = int(largura_barra * porcentagem_vida)
+            pygame.draw.rect(TELA, (200, 0, 0), (pos_x_barra, pos_y_barra, largura_atual, altura_barra))
+            pygame.draw.rect(TELA, (255, 255, 255), (pos_x_barra, pos_y_barra, largura_barra, altura_barra), 2)
+            texto_boss = fonte_hud.render("MEGA ROBOT", True, (200, 0, 0))
+            TELA.blit(texto_boss, (pos_x_barra, pos_y_barra + 25))
+
+        pygame.display.flip()
+
+    pygame.quit()
+    sys.exit()

@@ -42,7 +42,7 @@ class Button:
     def __init__(self, text, pos, callback):
         self.text = text
         self.callback = callback
-        
+       
         self.top_color = (255, 200, 95)
         self.bottom_color = (125, 88, 59)
 
@@ -82,7 +82,7 @@ class Button:
 
     def draw(self, surface, mouse_pos):
         hovered = self.rect.collidepoint(mouse_pos)
-        
+       
         # Sombra
         shadow_surf = self.make_gradient_text()
         shadow_surf.fill(self.shadow_color, special_flags=pygame.BLEND_RGBA_MIN)
