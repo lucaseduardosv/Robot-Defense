@@ -548,5 +548,4 @@ def start_game_fire():
 
         pygame.display.flip()
 
-    pygame.quit()
-    sys.exit()
+    return pontos
