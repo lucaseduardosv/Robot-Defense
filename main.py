@@ -154,7 +154,6 @@ class Button:
 
 
 class Menu:
-    # A classe Menu permanece como antes.
     def __init__(self, screen):
         self.screen = screen
         mid_x = largura // 2

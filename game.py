@@ -37,6 +37,10 @@ except:
     FUNDO = pygame.Surface((LARGURA, ALTURA))
     FUNDO.fill((30, 30, 30))
 
+
+# ======================================================
+# BASE
+# ======================================================
 class Entidade(pygame.sprite.Sprite):
     def __init__(self, x, y, velocidade):
         super().__init__()
@@ -48,20 +52,47 @@ class Entidade(pygame.sprite.Sprite):
         self.rect.x += dx
         self.rect.y += dy
 
+
+# ======================================================
+# JOGADOR (NAVE PRINCIPAL COM EASTER EGG)
+# ======================================================
 class Jogador(Entidade):
     def __init__(self, x, y):
         super().__init__(x, y, 7)
+
         try:
-            self.image = pygame.image.load(os.path.join(BASE, "sprites", "jogador.png")).convert_alpha()
-            self.image = pygame.transform.scale(self.image, (95, 95))
+            self.skin_normal = pygame.image.load(
+                os.path.join(BASE, "sprites", "jogador.png")
+            ).convert_alpha()
         except:
-            self.image.fill((0, 255, 0))
+            self.skin_normal = pygame.Surface((95, 95))
+            self.skin_normal.fill((0, 255, 0))
+
+        try:
+            self.skin_secreta = pygame.image.load(
+                os.path.join(BASE, "sprites", "jogador_secret.png")
+            ).convert_alpha()
+        except:
+            self.skin_secreta = self.skin_normal.copy()
+
+        self.skin_normal = pygame.transform.scale(self.skin_normal, (95, 95))
+        self.skin_secreta = pygame.transform.scale(self.skin_secreta, (95, 95))
+
+        self.image = self.skin_normal
         self.rect = self.image.get_rect(center=(x, y))
+
         self.vida = 5
         self.bonus_velocidade = 0
         self.tem_tiro_triplo = False
         self.tempo_tiro_triplo = 0
         self.tempo_velocidade = 0
+        self.skin_secreta_ativa = False
+
+    def ativar_skin_secreta(self):
+        if not self.skin_secreta_ativa:
+            self.image = self.skin_secreta
+            self.skin_secreta_ativa = True
+            print("🥚 EASTER EGG ATIVADO: NAVE SECRETA!")
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -77,20 +108,13 @@ class Jogador(Entidade):
 
         if self.tem_tiro_triplo:
             self.tempo_tiro_triplo -= 1
-            if self.tempo_tiro_triplo <= 0: self.tem_tiro_triplo = False
+            if self.tempo_tiro_triplo <= 0:
+                self.tem_tiro_triplo = False
+
         if self.bonus_velocidade > 0:
             self.tempo_velocidade -= 1
-            if self.tempo_velocidade <= 0: self.bonus_velocidade = 0
-
-class Tiro(Entidade):
-    def __init__(self, x, y):
-        super().__init__(x, y, 10)
-        self.image = pygame.Surface((6, 12))
-        self.image.fill((255, 255, 0))
-        self.rect = self.image.get_rect(center=(x, y))
-    def update(self):
-        self.rect.y -= self.velocidade
-        if self.rect.y < -10: self.kill()
+            if self.tempo_velocidade <= 0:
+                self.bonus_velocidade = 0
 
 class TiroInimigo(Entidade):
     def __init__(self, x, y, angle=90, speed=8):
@@ -217,42 +241,77 @@ class RoboChefao(Entidade):
     def __init__(self, x, y, jogador_alvo):
         super().__init__(x, y, velocidade=4)
         self.jogador_alvo = jogador_alvo
+
+        # ---------- SKINS ----------
         try:
-            self.image_original = pygame.image.load(os.path.join(BASE, "sprites", "boss2.png")).convert_alpha()
+            self.skin_normal = pygame.image.load(
+                os.path.join(BASE, "sprites", "boss2.png")
+            ).convert_alpha()
         except:
-            self.image_original = pygame.Surface((200, 200))
-            self.image_original.fill((100, 0, 100))
-        
-        self.image_original = pygame.transform.scale(self.image_original, (250, 250))
+            self.skin_normal = pygame.Surface((200, 200))
+            self.skin_normal.fill((100, 0, 100))
+
+        try:
+            self.skin_secreta = pygame.image.load(
+                os.path.join(BASE, "sprites", "boss_secret.png")
+            ).convert_alpha()
+        except:
+            self.skin_secreta = self.skin_normal.copy()
+
+        self.skin_normal = pygame.transform.scale(self.skin_normal, (250, 250))
+        self.skin_secreta = pygame.transform.scale(self.skin_secreta, (250, 250))
+
+        # Define skin inicial
+        self.image_original = self.skin_normal
         self.image = self.image_original.copy()
         self.rect = self.image.get_rect(center=(x, y))
 
+        # ---------- STATUS ----------
         self.vida_max = 200
         self.vida = self.vida_max
         self.furia_ativa = False
-        
+
+        # ---------- MOVIMENTO ----------
         self.estado = 'entrada'
         self.destino_y = 150
-        
+
         self.timer_tiro = 0
         self.cooldown_tiro = 60
         self.timer_dash = 0
         self.cooldown_dash = 240
-        
+
         self.dir_move = 1
         self.dash_vector = pygame.math.Vector2(0, 0)
 
+        # ---------- EASTER EGG ----------
+        self.skin_easter_ativa = False
+        if self.jogador_alvo and self.jogador_alvo.vida == 7:
+            self.ativar_skin_secreta()
+            print("🥚 EASTER EGG ATIVADO: BOSS SECRETO!")
+
+    # ---------- FUNÇÕES DE SKIN ----------
+    def ativar_skin_secreta(self):
+        self.image_original = self.skin_secreta
+        self.image = self.image_original.copy()
+        self.skin_easter_ativa = True
+
+    def aplicar_furia_visual(self):
+        vermelho = pygame.Surface(self.image_original.get_size()).convert_alpha()
+        vermelho.fill((255, 50, 50, 100))
+        self.image = self.image_original.copy()
+        self.image.blit(vermelho, (0, 0), special_flags=pygame.BLEND_MULT)
+
+    # ---------- UPDATE ----------
     def update(self):
+        # ATIVA FÚRIA
         if self.vida <= self.vida_max / 2 and not self.furia_ativa:
             self.furia_ativa = True
             self.cooldown_tiro = 25
             self.velocidade = 7
             self.cooldown_dash = 150
-            vermelho = pygame.Surface(self.image_original.get_size()).convert_alpha()
-            vermelho.fill((255, 50, 50, 100))
-            self.image = self.image_original.copy()
-            self.image.blit(vermelho, (0,0), special_flags=pygame.BLEND_MULT)
+            self.aplicar_furia_visual()
 
+        # ESTADOS
         if self.estado == 'entrada':
             if self.rect.centery < self.destino_y:
                 self.rect.y += 2
@@ -261,72 +320,54 @@ class RoboChefao(Entidade):
 
         elif self.estado == 'movendo':
             self.rect.x += self.velocidade * self.dir_move
-            if self.rect.right >= LARGURA - 20: self.dir_move = -1
-            if self.rect.left <= 20: self.dir_move = 1
-            
+            if self.rect.right >= LARGURA - 20:
+                self.dir_move = -1
+            if self.rect.left <= 20:
+                self.dir_move = 1
+
             self.timer_dash += 1
             if self.timer_dash >= self.cooldown_dash:
                 self.estado = 'preparando_dash'
                 self.timer_dash = 0
-            
+
             self.timer_tiro += 1
             if self.timer_tiro >= self.cooldown_tiro:
                 self.timer_tiro = 0
 
         elif self.estado == 'preparando_dash':
-            jitter_x = random.randint(-5, 5)
-            self.rect.x += jitter_x
+            self.rect.x += random.randint(-5, 5)
             self.timer_dash += 1
+
             if self.timer_dash > 40:
                 self.estado = 'dashing'
+
                 if self.jogador_alvo and self.jogador_alvo.alive():
                     px, py = self.jogador_alvo.rect.center
                 else:
-                    px, py = LARGURA//2, ALTURA
+                    px, py = LARGURA // 2, ALTURA
 
                 start = pygame.math.Vector2(self.rect.center)
                 end = pygame.math.Vector2(px, py)
                 direction = end - start
                 if direction.length() > 0:
                     direction = direction.normalize()
+
                 speed_dash = 25 if self.furia_ativa else 18
                 self.dash_vector = direction * speed_dash
 
         elif self.estado == 'dashing':
             self.rect.x += self.dash_vector.x
             self.rect.y += self.dash_vector.y
-            
-            if (self.rect.top > ALTURA) or (self.rect.bottom < 0) or \
-               (self.rect.left > LARGURA) or (self.rect.right < 0):
+
+            if (
+                self.rect.top > ALTURA or
+                self.rect.bottom < 0 or
+                self.rect.left > LARGURA or
+                self.rect.right < 0
+            ):
                 self.rect.centerx = LARGURA // 2
                 self.rect.bottom = 0
                 self.estado = 'entrada'
-
-class Explosion(pygame.sprite.Sprite):
-    def __init__(self, center, target_enemy=None, max_radius=50, frames=8):
-        super().__init__()
-        self.target_enemy = target_enemy
-        self.frames = []
-        self.frame_index = 0
-        for i in range(1, frames + 1):
-            radius = int(max_radius * (i / frames))
-            surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
-            pygame.draw.circle(surf, (255, 150, 0, 200), (radius, radius), radius)
-            pygame.draw.circle(surf, (255, 80, 0, 150), (radius, radius), max(1, radius // 2))
-            self.frames.append(surf)
-        self.image = self.frames[0]
-        self.rect = self.image.get_rect(center=center)
-        self.ticks = 0
-    def update(self):
-        self.ticks += 1
-        if self.ticks % 4 == 0:
-            self.frame_index += 1
-            if self.frame_index >= len(self.frames):
-                if self.target_enemy: self.target_enemy.explosion_done = True
-                self.kill()
-                return
-            self.image = self.frames[self.frame_index]
-            self.rect = self.image.get_rect(center=self.rect.center)
 
 class PowerUp(pygame.sprite.Sprite):
     def __init__(self, x, y, cor):
@@ -361,6 +402,55 @@ class PU_TiroTriplo(PowerUp):
             self.image = pygame.transform.scale(self.image, (30, 30))
         except: pass
 
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, pos, target_enemy=None):
+        super().__init__()
+        self.frames = []
+        self.frame_atual = 0
+        self.contador = 0
+        self.target_enemy = target_enemy
+
+        # Criar frames simples de explosão (círculos)
+        for tamanho in range(10, 60, 8):
+            surf = pygame.Surface((tamanho, tamanho), pygame.SRCALPHA)
+            pygame.draw.circle(
+                surf,
+                (255, random.randint(120, 200), 0),
+                (tamanho // 2, tamanho // 2),
+                tamanho // 2
+            )
+            self.frames.append(surf)
+
+        self.image = self.frames[0]
+        self.rect = self.image.get_rect(center=pos)
+
+    def update(self):
+        self.contador += 1
+
+        if self.contador % 4 == 0:
+            self.frame_atual += 1
+            if self.frame_atual >= len(self.frames):
+                if self.target_enemy:
+                    self.target_enemy.explosion_done = True
+                self.kill()
+                return
+
+            self.image = self.frames[self.frame_atual]
+            self.rect = self.image.get_rect(center=self.rect.center)
+
+class Tiro(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface((6, 14))
+        self.image.fill((0, 255, 255))
+        self.rect = self.image.get_rect(center=(x, y))
+        self.velocidade = -12
+
+    def update(self):
+        self.rect.y += self.velocidade
+        if self.rect.bottom < 0:
+            self.kill()
+
 def start_game_fire():
     global TELA
     pygame.font.init()
@@ -394,6 +484,8 @@ def start_game_fire():
     rodando = True
     while rodando:
         clock.tick(FPS)
+        spawn_timer += 1
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT: rodando = False
@@ -418,17 +510,23 @@ def start_game_fire():
             timer_tiro_mouse = 0
 
         if not boss_ativo:
-            spawn_timer += 1
             if pontos >= PONTOS_PARA_BOSS:
                 boss_ativo = True
+
+                # 🥚 EASTER EGG: troca skin do jogador SOMENTE agora
+                if jogador.vida == 7:
+                    jogador.ativar_skin_secreta()
+                    print("🥚 EASTER EGG ATIVADO: NAVE SECRETA!")
+
                 for inimigo in inimigos:
                     inimigo.kill()
                     explosao = Explosion(inimigo.rect.center)
                     todos_sprites.add(explosao)
-                
-                o_boss = RoboChefao(LARGURA//2, -200, jogador)
+
+                o_boss = RoboChefao(LARGURA // 2, -200, jogador)
                 boss_group.add(o_boss)
                 todos_sprites.add(o_boss)
+
             
             elif spawn_timer > intervalo_spawn:
                 tipo = random.choice(["zig", "rapido", "saltar", "ciclico", "lento"])
@@ -549,3 +647,5 @@ def start_game_fire():
         pygame.display.flip()
 
     return pontos
+
+
