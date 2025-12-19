@@ -146,6 +146,32 @@ class Robo(Entidade):
     def atualizar_posicao(self):
         raise NotImplementedError
 
+# Eu, Andreza Pereira, implementei um novo inimigo chamado RoboLento, tentando seguir o 
+# padrão da programação disponibilizada pelo professor. Para isso, criei a classe 
+# RoboLento, herdada da classe Robo, aplicando o conceito de herança da Programação
+# Orientadas Objetos. O encapsulamento foi mantido ao definir atributos e comportamentos
+# diretamente da classe, sem modificar outras partes do código. O RoboLento possui sua
+# velocidade menor em comparação aos outros robôs, caracterizando seu movimento lento. 
+# O método atualizar_posicao foi sobrescrito, demonstrando o uso do polimorfismo, 
+# permitindo que o robô tenha um comportamento diferente dos demais. Esse método faz
+# apenas que o robo em linha reta no eixo vertical, descendo da tela. Também foi usado um
+# sprite especifico para representar visualmente o RoboLento no jogo. Além disso, o 
+# robô foi integrado ao sistema de spawn já existente, tentando não modificar tanto a 
+# estrutura original do jogo. Dessa forma, o RoboLento aparece de maneira aleatória com
+# outros inimigos. A implementação foi feita respeitando a organização do código e
+# aplicando corretamente os conceitos de programação orientada a objetos.
+
+# Também durante o desenvolvimento do  Easter Egg, participei da elaboração do texto explicativo. Ajudei a 
+# descrever como Easter Egg funciona no jogo e o que jogador precisa fazer para ativá-lo. Contribui
+# na explicação de ideia de recompensa secreta, dando ênfase à mudança de skin e aumento de
+# poder da arma. Também ajudei na escrita na parte que explica o tempo limitado de poder,
+# garantindo o equilíbrio do jogo. O texto foi pensado para ficar simples para quem lê. Procuramos
+# explicar de maneira objetiva como o sistema confere o desempenho do jogador. Além disso,
+# ajudei a revisar o texto para manter uma linguagem adequada ao sistema escolar. A descrição foi
+# escrita destacando a importância do Easter Egg para tornar o jogo mais interessante. O conteúdo
+# tem reforço no uso da Programação Orientada a Objetos. Dessa forma, minha organização foi
+# tanto na escrita como nas ideias organizadas. 
+
 class RoboLento(Robo):
     def __init__(self, x, y):
         super().__init__(x, y, velocidade=2)
